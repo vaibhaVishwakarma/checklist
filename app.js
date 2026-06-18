@@ -62,6 +62,7 @@
   const pending = new Map();
   const statusCache = new Map();
   let fullFetchPerformed = false;
+  let forceFullFetch = false;
 
   function readLocal(key) {
     try {
@@ -81,19 +82,13 @@
   }
   function clearLocal(key) { try { localStorage.removeItem('oa_status_' + key); } catch(e){} }
 
-  // detect forced reload (Ctrl+R) so we can bypass TTL
-  let forcedReload = false;
-  try {
-    const nav = performance.getEntriesByType && performance.getEntriesByType('navigation') && performance.getEntriesByType('navigation')[0];
-    forcedReload = (nav && nav.type === 'reload') || (performance && performance.navigation && performance.navigation.type === 1);
-  } catch(e){}
-
   // UI refs
   const els = {
     search: document.getElementById('search'),
     diff: document.getElementById('diff'),
     type: document.getElementById('type'),
     company: document.getElementById('company'),
+    forceFetchBtn: document.getElementById('forceFetchBtn'),
     tbody: document.querySelector('#qtable tbody'),
     companies: document.getElementById('companies'),
     count: document.getElementById('count'),
@@ -137,9 +132,11 @@
   // load status for a single key, using local cache and pending map
   async function fetchStatusForKey(key){
     if (!key) return 'unchecked';
-    // Always prefer local cache when available to avoid KV throttling
-    const local = readLocal(key);
-    if (local) return local;
+    // Use local cache unless a manual full refresh was requested.
+    if (!forceFullFetch) {
+      const local = readLocal(key);
+      if (local) return local;
+    }
     // avoid duplicate network calls
     if (pending.has(key)){
       try { return await pending.get(key); } catch(e){ return 'unchecked'; }
@@ -279,11 +276,26 @@
 
   function renderAll(){ renderSummary(); renderTable(); renderCompaniesPanel(); }
 
+  async function refreshStatuses(){
+    if (!els.forceFetchBtn) return;
+    forceFullFetch = true;
+    els.forceFetchBtn.disabled = true;
+    els.forceFetchBtn.textContent = 'Refreshing...';
+    try {
+      await renderTable();
+    } finally {
+      forceFullFetch = false;
+      els.forceFetchBtn.disabled = false;
+      els.forceFetchBtn.textContent = 'Refresh statuses';
+    }
+  }
+
   // controls
   els.search.addEventListener('input', e=>{ state.search = e.target.value; renderTable(); });
   els.diff.addEventListener('change', e=>{ state.diff = e.target.value; renderTable(); });
   els.type.addEventListener('change', e=>{ state.type = e.target.value; renderTable(); });
   els.company.addEventListener('change', e=>{ state.company = e.target.value; renderAll(); });
+  if (els.forceFetchBtn) els.forceFetchBtn.addEventListener('click', refreshStatuses);
 
   // sorting by header click
   document.querySelectorAll('#qtable th[data-col]').forEach(th=>{
