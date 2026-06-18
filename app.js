@@ -58,7 +58,7 @@
   }
 
   // local caching
-  const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const TTL_MS = 1 * 60 * 60 * 1000; // 1 hour
   const pending = new Map();
   const statusCache = new Map();
   let fullFetchPerformed = false;
@@ -70,6 +70,8 @@
       const obj = JSON.parse(raw);
       if (!obj || !obj.status) return null;
       if (Date.now() - (obj.ts || 0) > TTL_MS) return null;
+      // refresh TTL when restored from local storage
+      writeLocal(key, obj.status);
       return obj.status;
     } catch (e) { return null; }
   }
