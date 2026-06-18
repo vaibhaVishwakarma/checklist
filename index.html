@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OA Prep Sheet (Vanilla)</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <h1>⚡ Company OA Prep Sheet</h1>
+        <p id="summary" class="muted"></p>
+      </div>
+      <div class="header-stats">
+        <span class="stat stat-easy"> <strong id="easyCount">0</strong> Easy</span>
+        <span class="stat stat-med"> <strong id="medCount">0</strong> Medium</span>
+        <span class="stat stat-hard"> <strong id="hardCount">0</strong> Hard</span>
+        <span class="stat stat-decider"> <strong id="deciderCount">0</strong> Decider</span>
+      </div>
+    </header>
+
+    <section class="filters">
+      <input id="search" placeholder="Search by name or concept..." />
+      <select id="diff"><option value="All">All Difficulties</option><option>Easy</option><option>Medium</option><option>Hard</option></select>
+      <select id="type"><option value="All">All Tiers</option><option value="warmup">Q1 / Warmup</option><option value="core">Q2 / Core</option><option value="decider">Q3-4 / Decider</option></select>
+      <select id="company"><option value="All">All Companies</option></select>
+      <div id="count" class="muted"></div>
+    </section>
+
+    <section class="table-wrap">
+      <table id="qtable">
+        <thead>
+          <tr>
+            <th data-col="id"># <span class="sortIcon"></span></th>
+            <th data-col="name">Problem <span class="sortIcon"></span></th>
+            <th data-col="concept" class="hide-md">Concept <span class="sortIcon"></span></th>
+            <th data-col="diff">Diff <span class="sortIcon"></span></th>
+            <th data-col="type">Tier <span class="sortIcon"></span></th>
+            <th>Status</th>
+            <th class="hide-lg">Companies</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Top Companies Coverage</h2>
+      <div id="companies" class="companies"></div>
+      <p class="muted">Click a company tile to filter questions.</p>
+    </section>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
