@@ -1,19 +1,15 @@
 git add .
 @echo off
-:: Fetch a reliable, region-independent timestamp
-for /f "tokens=2 delims==" %%I in ('wmic os get localdatetime /value') do set datetime=%%I
 
-:: Extract date and hour components
-set year=%datetime:~2,2%
-set month=%datetime:~4,2%
-set day=%datetime:~6,2%
-set hour=%datetime:~8,2%
+:: Use PowerShell safely to grab and format the date & time
+for /f "usebackq tokens=*" %%i in (`powershell -NoProfile -Command "Get-Date -Format 'dd-MM-yy #HH'"`) do set "git_date=%%i"
 
-:: Build the commit message string
-set msg=commit %day%-%month%-%year% #%hour%
+:: Construct the message
+set "msg=commit %git_date%"
 
-:: Run the Git commands
+:: Run your Git commands
 git commit -m "%msg%"
+
 git push origin main
 
 echo "\n\nhttps://vaibhavishwakarma.github.io/checklist/"
