@@ -92,7 +92,11 @@
     tbody: document.querySelector('#qtable tbody'),
     companies: document.getElementById('companies'),
     count: document.getElementById('count'),
-    summary: document.getElementById('summary')
+    summary: document.getElementById('summary'),
+    staticProgress: document.getElementById('staticProgress'),
+    staticProgressValue: document.getElementById('staticProgressValue'),
+    scrollProgress: document.getElementById('scrollProgress'),
+    scrollProgressValue: document.getElementById('scrollProgressValue')
   };
 
   const state = { search: '', diff: 'All', type: 'All', company: 'All', sort: 'id', sortDir: 1 };
@@ -171,11 +175,48 @@
     catch(e){ console.error('toggle write error', e); }
   }
 
+  function getStoredStatus(key){
+    if (!key) return 'unchecked';
+    if (statusCache.has(key)) return statusCache.get(key);
+    const local = readLocal(key);
+    return local === 'checked' ? 'checked' : 'unchecked';
+  }
+
   function updateHeaderStats(){
     document.getElementById('easyCount').textContent = QUESTIONS.filter(q=>q.diff==='Easy').length;
     document.getElementById('medCount').textContent = QUESTIONS.filter(q=>q.diff==='Medium').length;
     document.getElementById('hardCount').textContent = QUESTIONS.filter(q=>q.diff==='Hard').length;
     document.getElementById('deciderCount').textContent = QUESTIONS.filter(q=>q.type==='decider').length;
+  }
+
+  function updateStaticProgress(){
+    const solved = QUESTIONS.reduce((count,q)=> count + (getStoredStatus(getStatusKey(q)) === 'checked' ? 1 : 0), 0);
+    const percent = QUESTIONS.length ? Math.round((solved / QUESTIONS.length) * 100) : 0;
+    if (els.staticProgress){
+      els.staticProgress.style.width = `${percent}%`;
+      els.staticProgressValue.textContent = `${percent}%`;
+    }
+  }
+
+  function updateScrollProgress(){
+    if (!els.tbody) return;
+    const rows = Array.from(els.tbody.querySelectorAll('tr'));
+    if (!rows.length) {
+      if (els.scrollProgress){ els.scrollProgress.style.width = '0'; els.scrollProgressValue.textContent = '0%'; }
+      return;
+    }
+    const viewportMid = window.innerHeight / 2;
+    let best = { idx: 0, dist: Infinity };
+    rows.forEach((row, index)=>{
+      const rect = row.getBoundingClientRect();
+      const distance = Math.abs(rect.top - viewportMid);
+      if (distance < best.dist) best = { idx: index, dist: distance };
+    });
+    const percent = rows.length > 1 ? Math.round((best.idx / (rows.length - 1)) * 100) : 100;
+    if (els.scrollProgress){
+      els.scrollProgress.style.width = `${percent}%`;
+      els.scrollProgressValue.textContent = `${percent}%`;
+    }
   }
 
   function updateSortIcons(){ document.querySelectorAll('#qtable th[data-col]').forEach(th=>{ const col = th.getAttribute('data-col'); const icon = th.querySelector('.sortIcon'); if (!icon) return; if (state.sort === col) icon.textContent = state.sortDir === 1 ? '▲' : '▼'; else icon.textContent = '⇅'; }); }
@@ -234,9 +275,11 @@
     }
     els.count.textContent = `Showing ${rows.length} / ${QUESTIONS.length}`;
     updateSortIcons();
+    updateScrollProgress();
       // after all status fetches complete, if any network-backed fetch happened, log once
       try {
         await Promise.all(fetchPromises);
+        updateStaticProgress();
         if (fullFetchPerformed) {
           console.log('full fetch of status done');
           fullFetchPerformed = false;
@@ -244,6 +287,7 @@
           console.log('using saved checklist');
         }
       } catch (e) {
+        updateStaticProgress();
         if (fullFetchPerformed) {
             console.log('full fetch of status done');
             fullFetchPerformed = false;
@@ -296,6 +340,8 @@
   els.type.addEventListener('change', e=>{ state.type = e.target.value; renderTable(); });
   els.company.addEventListener('change', e=>{ state.company = e.target.value; renderAll(); });
   if (els.forceFetchBtn) els.forceFetchBtn.addEventListener('click', refreshStatuses);
+  window.addEventListener('scroll', updateScrollProgress);
+  window.addEventListener('resize', updateScrollProgress);
 
   // sorting by header click
   document.querySelectorAll('#qtable th[data-col]').forEach(th=>{
